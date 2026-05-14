@@ -37,6 +37,8 @@ dist/
 *.tar.xz
 *.7z
 *.exe
+*.app/
+*.dmg
 *.deb
 *.rpm
 
