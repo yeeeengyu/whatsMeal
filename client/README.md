@@ -5,7 +5,7 @@ FastAPI 백엔드에서 급식 정보를 받아 작업표시줄 트레이에 작
 ## 실행 준비
 
 ```bash
-cd windows-client
+cd client
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -15,7 +15,7 @@ cp .env.example .env
 Windows PowerShell:
 
 ```powershell
-cd windows-client
+cd client
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
@@ -36,7 +36,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 클라이언트를 실행합니다.
 
 ```bash
-cd ../windows-client
+cd ../client
 python -m app.main
 ```
 
@@ -79,7 +79,7 @@ REQUEST_TIMEOUT=7
 macOS에서 실행합니다. Windows나 Linux에서는 macOS 앱을 빌드할 수 없습니다.
 
 ```bash
-cd windows-client
+cd client
 chmod +x packaging/macos/build-macos.sh
 ./packaging/macos/build-macos.sh
 ```
