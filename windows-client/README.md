@@ -22,12 +22,7 @@ pip install -r requirements.txt
 copy .env.example .env
 ```
 
-`.env`에서 백엔드 주소를 설정합니다.
-
-```env
-API_BASE_URL=http://13.125.46.133:8000
-REQUEST_TIMEOUT=7
-```
+.env_example을 참고하여 환경변수를 설정해야 합니다.
 
 ## 개발 실행
 
@@ -72,12 +67,10 @@ PySide6를 단일 exe로 묶기 때문에 몇 분 정도 걸릴 수 있습니다
 dist\WhatsMeal.exe
 ```
 
-`build.bat`은 배포용 단일 exe를 만듭니다. 기본 서버 주소는 앱 안에 `http://13.125.46.133:8000`으로 들어가 있으므로 exe 파일 하나만 보내도 됩니다.
-
 서버 주소를 나중에 바꾸고 싶으면 `WhatsMeal.exe`와 같은 폴더에 `.env` 파일을 추가로 두면 그 값이 우선 적용됩니다.
 
 ```env
-API_BASE_URL=http://13.125.46.133:8000
+API_BASE_URL=
 REQUEST_TIMEOUT=7
 ```
 
