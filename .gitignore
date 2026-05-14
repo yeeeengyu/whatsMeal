@@ -57,9 +57,9 @@ desktop.ini
 backend/.venv/
 backend/app/__pycache__/
 school-meal-tray/.venv/
-windows-client/.venv/
-windows-client/build/
-windows-client/dist/
+client/.venv/
+client/build/
+client/dist/
 
 # Local test folder
 school-meal-tray/
