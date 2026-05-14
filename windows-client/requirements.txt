@@ -1,4 +1,0 @@
-PySide6
-httpx
-python-dotenv
-pyinstaller
