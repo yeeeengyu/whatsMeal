@@ -1,11 +1,24 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+from pathlib import Path
+
+import PySide6
+
 block_cipher = None
+pyside6_dir = Path(PySide6.__file__).resolve().parent
+pyside6_plugins_dir = pyside6_dir / "plugins"
+qt_plugin_binaries = [
+    (
+        str(plugin_path),
+        str(Path("PySide6") / "plugins" / plugin_path.parent.relative_to(pyside6_plugins_dir)),
+    )
+    for plugin_path in pyside6_plugins_dir.rglob("*.dll")
+]
 
 a = Analysis(
     ["app/main.py"],
     pathex=["."],
-    binaries=[],
+    binaries=qt_plugin_binaries,
     datas=[],
     hiddenimports=[
         "app.api",
@@ -22,8 +35,18 @@ a = Analysis(
     ],
     hookspath=[],
     hooksconfig={},
-    runtime_hooks=[],
-    excludes=[],
+    runtime_hooks=["app/pyinstaller_qt_plugins.py"],
+    excludes=[
+        "PyQt5",
+        "PyQt6",
+        "PySide2",
+        "PySide6.Qt3DAnimation",
+        "PySide6.Qt3DCore",
+        "PySide6.Qt3DExtras",
+        "PySide6.Qt3DInput",
+        "PySide6.Qt3DLogic",
+        "PySide6.Qt3DRender",
+    ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,

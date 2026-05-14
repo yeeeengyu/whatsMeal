@@ -1,4 +1,4 @@
-from PySide6.QtCore import QDate, QThreadPool, Qt, QTimer
+from PySide6.QtCore import QDate, QSize, QThreadPool, Qt, QTimer
 from PySide6.QtGui import QCursor, QGuiApplication
 from PySide6.QtWidgets import (
     QApplication,
@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSizePolicy,
+    QStyle,
     QToolButton,
     QVBoxLayout,
     QWidget,
@@ -26,7 +27,7 @@ class MealPopup(QWidget):
         self._last_meal: MealData | None = None
 
         self.setObjectName("MealPopup")
-        self.setFixedSize(360, 520)
+        self.setFixedSize(372, 560)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
 
         self._build_ui()
@@ -67,12 +68,13 @@ class MealPopup(QWidget):
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
-        root.setContentsMargins(18, 16, 18, 16)
-        root.setSpacing(12)
+        root.setContentsMargins(20, 18, 20, 18)
+        root.setSpacing(14)
 
         header = QHBoxLayout()
+        header.setSpacing(10)
         header_text = QVBoxLayout()
-        header_text.setSpacing(2)
+        header_text.setSpacing(4)
 
         self.title_label = QLabel("경소고 급식")
         self.title_label.setObjectName("TitleLabel")
@@ -83,13 +85,23 @@ class MealPopup(QWidget):
         header_text.addWidget(self.date_label)
 
         self.refresh_button = QToolButton()
-        self.refresh_button.setText("새로고침")
         self.refresh_button.setObjectName("GhostButton")
+        self.refresh_button.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_BrowserReload)
+        )
+        self.refresh_button.setIconSize(QSize(16, 16))
+        self.refresh_button.setToolTip("새로고침")
+        self.refresh_button.setFixedSize(36, 32)
         self.refresh_button.clicked.connect(self.show_today)
 
         self.close_button = QToolButton()
-        self.close_button.setText("닫기")
         self.close_button.setObjectName("GhostButton")
+        self.close_button.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_TitleBarCloseButton)
+        )
+        self.close_button.setIconSize(QSize(16, 16))
+        self.close_button.setToolTip("닫기")
+        self.close_button.setFixedSize(36, 32)
         self.close_button.clicked.connect(self.hide)
 
         header.addLayout(header_text, 1)
@@ -103,34 +115,42 @@ class MealPopup(QWidget):
         root.addWidget(self.status_label)
 
         scroll = QScrollArea()
+        scroll.setObjectName("MealScroll")
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
 
         self.meal_content = QWidget()
+        self.meal_content.setObjectName("MealContent")
         self.meal_layout = QVBoxLayout(self.meal_content)
-        self.meal_layout.setContentsMargins(0, 0, 0, 0)
-        self.meal_layout.setSpacing(12)
+        self.meal_layout.setContentsMargins(0, 2, 0, 2)
+        self.meal_layout.setSpacing(10)
         self.meal_layout.addStretch(1)
         scroll.setWidget(self.meal_content)
         root.addWidget(scroll, 1)
 
         actions = QHBoxLayout()
+        actions.setContentsMargins(0, 0, 0, 0)
         self.copy_button = QPushButton("복사")
+        self.copy_button.setMinimumHeight(34)
         self.copy_button.clicked.connect(self._copy_current_meal)
         actions.addWidget(self.copy_button)
         root.addLayout(actions)
 
         date_search = QHBoxLayout()
         date_search.setSpacing(8)
+        date_search.setContentsMargins(0, 0, 0, 0)
         self.date_input = QDateEdit()
         self.date_input.setDisplayFormat("yyyy-MM-dd")
         self.date_input.setCalendarPopup(True)
         self.date_input.setDate(QDate.currentDate())
+        self.date_input.setMinimumHeight(36)
         self.date_input.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         self.search_button = QPushButton("날짜 조회")
         self.search_button.setObjectName("SecondaryButton")
+        self.search_button.setMinimumSize(QSize(86, 36))
         self.search_button.clicked.connect(self._search_date)
 
         date_search.addWidget(self.date_input, 1)
@@ -141,59 +161,116 @@ class MealPopup(QWidget):
         self.setStyleSheet(
             """
             QWidget#MealPopup {
-                background: #f7f8fb;
-                border: 1px solid #d7dce5;
-                border-radius: 8px;
-                color: #172033;
+                background: #f4f7fb;
+                border: 1px solid #ccd6e3;
+                border-radius: 10px;
+                color: #182230;
                 font-family: "Malgun Gothic", "Segoe UI", sans-serif;
                 font-size: 13px;
             }
             QLabel#TitleLabel {
-                font-size: 18px;
+                color: #101828;
+                font-size: 19px;
                 font-weight: 700;
             }
             QLabel#DateLabel {
-                color: #667085;
+                color: #52637a;
                 font-size: 12px;
             }
             QLabel#StatusLabel {
-                color: #3b475c;
-                min-height: 20px;
+                color: #42526a;
+                min-height: 18px;
             }
             QToolButton#GhostButton {
-                background: transparent;
-                border: 1px solid #d7dce5;
-                border-radius: 6px;
-                padding: 5px 8px;
+                background: #ffffff;
+                border: 1px solid #cfd8e6;
+                border-radius: 8px;
+                color: #344054;
+                padding: 0;
             }
-            QToolButton#GhostButton:hover,
-            QPushButton:hover {
-                background: #edf2f7;
+            QToolButton#GhostButton:hover {
+                background: #e9eff7;
+                border-color: #b8c5d8;
             }
             QPushButton {
-                background: #1f6feb;
+                background: #2563eb;
                 color: white;
                 border: 0;
-                border-radius: 6px;
+                border-radius: 8px;
                 padding: 8px 12px;
                 font-weight: 600;
             }
+            QPushButton:hover {
+                background: #1d4ed8;
+            }
+            QPushButton:disabled {
+                background: #b8c4d6;
+                color: #edf2f7;
+            }
             QPushButton#SecondaryButton {
-                background: #344054;
+                background: #26364d;
+                padding-left: 12px;
+                padding-right: 12px;
+            }
+            QPushButton#SecondaryButton:hover {
+                background: #1f2a3d;
             }
             QDateEdit {
                 background: white;
-                border: 1px solid #d0d5dd;
-                border-radius: 6px;
-                padding: 7px 8px;
+                border: 1px solid #cfd8e6;
+                border-radius: 8px;
+                color: #182230;
+                padding: 7px 10px;
+                selection-background-color: #2563eb;
             }
-            QScrollArea {
+            QDateEdit::drop-down {
+                width: 24px;
+                border: 0;
+                subcontrol-origin: padding;
+                subcontrol-position: top right;
+            }
+            QDateEdit::up-button,
+            QDateEdit::down-button {
+                border: 0;
+                width: 0;
+                height: 0;
+            }
+            QDateEdit::up-arrow,
+            QDateEdit::down-arrow {
+                image: none;
+                width: 0;
+                height: 0;
+            }
+            QScrollArea#MealScroll,
+            QScrollArea#MealScroll QWidget#MealContent,
+            QScrollArea#MealScroll > QWidget,
+            QScrollArea#MealScroll > QWidget > QWidget {
+                background: transparent;
+                border: 0;
+            }
+            QScrollBar:vertical {
+                background: transparent;
+                width: 8px;
+                margin: 2px 0;
+            }
+            QScrollBar::handle:vertical {
+                background: #c9d4e2;
+                border-radius: 4px;
+                min-height: 28px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background: #aebdd1;
+            }
+            QScrollBar::add-line:vertical,
+            QScrollBar::sub-line:vertical {
+                height: 0;
+                border: 0;
                 background: transparent;
             }
             QFrame#MealSection {
                 background: white;
-                border: 1px solid #e4e7ec;
-                border-radius: 8px;
+                border: 1px solid #dfe6ef;
+                border-radius: 10px;
             }
             QLabel#SectionTitle {
                 color: #101828;
@@ -203,6 +280,7 @@ class MealPopup(QWidget):
             QLabel#DishLabel {
                 color: #344054;
                 line-height: 140%;
+                padding-left: 2px;
             }
             """
         )
@@ -243,9 +321,10 @@ class MealPopup(QWidget):
     def _add_meal_section(self, title: str, dishes: list[str]) -> None:
         frame = QFrame()
         frame.setObjectName("MealSection")
+        frame.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         layout = QVBoxLayout(frame)
-        layout.setContentsMargins(14, 12, 14, 12)
-        layout.setSpacing(8)
+        layout.setContentsMargins(16, 14, 16, 14)
+        layout.setSpacing(7)
 
         title_label = QLabel(title)
         title_label.setObjectName("SectionTitle")
