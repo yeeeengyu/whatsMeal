@@ -31,7 +31,7 @@ cp .env.example .env
 설정 예시:
 
 ```env
-NEIS_API_KEY=44b60bc4bf64451cb427cbf5c1031fee
+NEIS_API_KEY= # NEIS API 키
 SCHOOL_NAME=경북소프트웨어마이스터고등학교
 DEFAULT_REGION_CODE=R10
 DEFAULT_SCHOOL_CODE=8750829
