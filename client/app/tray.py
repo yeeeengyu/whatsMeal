@@ -1,82 +1,72 @@
 import logging
+import threading
+from typing import Any, Protocol
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QAction, QColor, QIcon, QPainter, QPixmap
-from PySide6.QtWidgets import QMenu, QSystemTrayIcon
 
-from app.api import MealApiClient
-from app.popup import MealPopup
+class TrayController(Protocol):
+    def show_popup(self) -> None:
+        ...
+
+    def refresh_today(self) -> None:
+        ...
+
+    def quit_app(self) -> None:
+        ...
 
 
 class MealTray:
-    def __init__(self, api_client: MealApiClient) -> None:
-        self.popup = MealPopup(api_client)
-        self.tray = QSystemTrayIcon(_create_icon())
-        self.tray.setToolTip("경소고 급식")
-        self.tray.activated.connect(self._on_activated)
-        self.tray.setContextMenu(self._create_menu())
+    def __init__(self, controller: TrayController) -> None:
+        import pystray
 
-    def show(self) -> None:
-        self.tray.show()
-        logging.info("Tray show requested. visible=%s", self.tray.isVisible())
-        self.tray.showMessage(
+        self._controller = controller
+        self._icon = pystray.Icon(
+            "WhatsMeal",
+            _create_icon(),
             "경소고 급식",
-            "급식 위젯이 실행되었습니다.",
-            QSystemTrayIcon.MessageIcon.Information,
-            1800,
+            menu=pystray.Menu(
+                pystray.MenuItem("급식 보기", self._show_popup, default=True),
+                pystray.MenuItem("새로고침", self._refresh_today),
+                pystray.Menu.SEPARATOR,
+                pystray.MenuItem("종료", self._quit),
+            ),
         )
-        self.popup.show_near_cursor()
-        logging.info("Popup show requested. visible=%s", self.popup.isVisible())
-        self.popup.show_today()
+        self._started = False
+        self._thread: threading.Thread | None = None
 
-    def _create_menu(self) -> QMenu:
-        menu = QMenu()
+    def start(self) -> None:
+        if self._started:
+            return
 
-        show_action = QAction("급식 보기")
-        show_action.triggered.connect(self.popup.toggle_near_cursor)
-        menu.addAction(show_action)
+        try:
+            self._icon.run_detached()
+        except NotImplementedError:
+            self._thread = threading.Thread(target=self._icon.run, daemon=True)
+            self._thread.start()
 
-        refresh_action = QAction("새로고침")
-        refresh_action.triggered.connect(self.popup.show_today)
-        menu.addAction(refresh_action)
+        self._started = True
+        logging.info("Tray icon started")
 
-        menu.addSeparator()
+    def stop(self) -> None:
+        self._icon.stop()
+        logging.info("Tray icon stopped")
 
-        quit_action = QAction("종료")
-        quit_action.triggered.connect(self._quit)
-        menu.addAction(quit_action)
+    def _show_popup(self, icon, item) -> None:
+        self._controller.show_popup()
 
-        return menu
+    def _refresh_today(self, icon, item) -> None:
+        self._controller.refresh_today()
 
-    def _on_activated(self, reason: QSystemTrayIcon.ActivationReason) -> None:
-        if reason in (
-            QSystemTrayIcon.ActivationReason.Trigger,
-            QSystemTrayIcon.ActivationReason.DoubleClick,
-        ):
-            self.popup.toggle_near_cursor()
-
-    def _quit(self) -> None:
-        self.tray.hide()
-        self.popup.close()
-        from PySide6.QtWidgets import QApplication
-
-        QApplication.quit()
+    def _quit(self, icon, item) -> None:
+        self._controller.quit_app()
 
 
-def _create_icon() -> QIcon:
-    pixmap = QPixmap(64, 64)
-    pixmap.fill(Qt.GlobalColor.transparent)
+def _create_icon() -> Any:
+    from PIL import Image, ImageDraw
 
-    painter = QPainter(pixmap)
-    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-    painter.setBrush(QColor("#1f6feb"))
-    painter.setPen(Qt.PenStyle.NoPen)
-    painter.drawRoundedRect(6, 6, 52, 52, 12, 12)
-
-    painter.setBrush(QColor("#ffffff"))
-    painter.drawRoundedRect(18, 17, 28, 5, 2, 2)
-    painter.drawRoundedRect(18, 29, 28, 5, 2, 2)
-    painter.drawRoundedRect(18, 41, 20, 5, 2, 2)
-    painter.end()
-
-    return QIcon(pixmap)
+    image = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    draw.rounded_rectangle((6, 6, 58, 58), radius=12, fill="#1f6feb")
+    draw.rounded_rectangle((18, 17, 46, 22), radius=2, fill="#ffffff")
+    draw.rounded_rectangle((18, 29, 46, 34), radius=2, fill="#ffffff")
+    draw.rounded_rectangle((18, 41, 38, 46), radius=2, fill="#ffffff")
+    return image
