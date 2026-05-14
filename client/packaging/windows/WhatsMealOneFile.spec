@@ -1,24 +1,31 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+from pathlib import Path
+
+
 block_cipher = None
+project_root = Path(SPECPATH).resolve().parents[1]
 
 a = Analysis(
-    ["app/main.py"],
-    pathex=["."],
+    [str(project_root / "app" / "main.py")],
+    pathex=[str(project_root)],
     binaries=[],
     datas=[],
     hiddenimports=[
         "app.api",
         "app.config",
         "app.diagnostics",
-        "app.popup",
         "app.tray",
-        "app.workers",
-        "PySide6.QtCore",
-        "PySide6.QtGui",
-        "PySide6.QtWidgets",
+        "app.web_popup",
         "httpx",
         "dotenv",
+        "PIL",
+        "pyperclip",
+        "pystray",
+        "pystray._win32",
+        "webview",
+        "webview.platforms.edgechromium",
+        "webview.platforms.winforms",
     ],
     hookspath=[],
     hooksconfig={},

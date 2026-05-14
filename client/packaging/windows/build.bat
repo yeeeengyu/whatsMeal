@@ -21,7 +21,7 @@ if exist build rmdir /S /Q build
 if exist dist rmdir /S /Q dist
 
 echo [4/4] Building single exe. This can take a few minutes...
-pyinstaller --noconfirm --clean --noupx packaging\windows\WhatsMealOneFile.spec
+pyinstaller --noconfirm --clean packaging\windows\WhatsMealOneFile.spec
 if errorlevel 1 goto :error
 
 echo.

@@ -24,7 +24,7 @@ echo "[3/4] Cleaning old build output..."
 rm -rf build dist
 
 echo "[4/4] Building macOS app..."
-pyinstaller --noconfirm --clean --noupx packaging/macos/WhatsMealMac.spec
+pyinstaller --noconfirm --clean packaging/macos/WhatsMealMac.spec
 
 if [[ -f .env ]]; then
   cp .env dist/WhatsMeal.app/Contents/MacOS/.env
