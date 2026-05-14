@@ -1,4 +1,7 @@
-PySide6
 httpx
+Pillow
 python-dotenv
 pyinstaller
+pyperclip
+pystray
+pywebview

@@ -7,31 +7,17 @@ from app.diagnostics import get_log_path, setup_logging
 def run_app() -> int:
     import logging
 
-    from PySide6.QtWidgets import QApplication, QMessageBox, QSystemTrayIcon
-
     from app.api import MealApiClient
     from app.config import load_config
-    from app.tray import MealTray
+    from app.web_popup import WebMealApp
 
-    app = QApplication(sys.argv)
-    app.setQuitOnLastWindowClosed(False)
-    app.setApplicationName("경소고 급식")
     logging.info("Starting WhatsMeal from %s", sys.executable)
     logging.info("Frozen executable: %s", getattr(sys, "frozen", False))
 
-    if not QSystemTrayIcon.isSystemTrayAvailable():
-        logging.error("System tray is not available")
-        QMessageBox.critical(None, "경소고 급식", "시스템 트레이를 사용할 수 없습니다.")
-        return 1
-
-    logging.info("System tray is available")
-
     config = load_config()
     api_client = MealApiClient(config)
-    tray = MealTray(api_client)
-    tray.show()
-
-    return app.exec()
+    app = WebMealApp(api_client)
+    return app.run()
 
 
 def main() -> int:
@@ -46,20 +32,25 @@ def main() -> int:
 
         logging.exception("WhatsMeal failed to start")
 
-        try:
-            from PySide6.QtWidgets import QApplication, QMessageBox
+        _show_startup_error(
+            "경소고 급식 실행 오류",
+            f"앱을 시작하지 못했습니다.\n\n로그: {get_log_path()}\n\n{error_text[-1200:]}",
+        )
 
-            app = QApplication.instance() or QApplication(sys.argv)
-            QMessageBox.critical(
-                None,
-                "경소고 급식 실행 오류",
-                f"앱을 시작하지 못했습니다.\n\n로그: {get_log_path()}\n\n{error_text[-1200:]}",
-            )
-            app.quit()
+        return 1
+
+
+def _show_startup_error(title: str, message: str) -> None:
+    if sys.platform.startswith("win"):
+        try:
+            import ctypes
+
+            ctypes.windll.user32.MessageBoxW(None, message, title, 0x10)
+            return
         except Exception:
             pass
 
-        return 1
+    print(f"{title}\n{message}", file=sys.stderr)
 
 
 if __name__ == "__main__":
