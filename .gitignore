@@ -1,0 +1,63 @@
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.python-version
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Build artifacts
+build/
+dist/
+*.spec.bak
+*.manifest
+
+# PyInstaller
+*.pyz
+*.pkg
+
+# App/package outputs
+*.zip
+*.tar
+*.tar.gz
+*.tar.xz
+*.7z
+*.exe
+*.deb
+*.rpm
+
+# Logs
+*.log
+logs/
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+
+# Project local generated files
+backend/.venv/
+backend/app/__pycache__/
+school-meal-tray/.venv/
+windows-client/.venv/
+windows-client/build/
+windows-client/dist/
+
+# Local test folder
+school-meal-tray/
