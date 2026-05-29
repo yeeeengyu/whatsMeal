@@ -21,7 +21,7 @@ if [[ ! -f school-meal-tray/meal_tray.py ]]; then
   exit 1
 fi
 
-if [[ ! -d school-meal-tray/.venv ]]; then
+if [[ ! -f school-meal-tray/.venv/bin/activate ]]; then
   python3 -m venv --system-site-packages school-meal-tray/.venv
 fi
 

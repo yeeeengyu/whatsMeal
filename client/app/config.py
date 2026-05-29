@@ -17,7 +17,10 @@ def load_config() -> AppConfig:
     load_dotenv(_runtime_env_path(), override=True)
 
     return AppConfig(
-        api_base_url=os.getenv("API_BASE_URL", "http://13.125.46.133:8000").rstrip("/"),
+        api_base_url=os.getenv(
+            "API_BASE_URL",
+            "https://port-0-whatsmeal-mcn12bdr8fab7aae.sel5.cloudtype.app",
+        ).rstrip("/"),
         request_timeout=float(os.getenv("REQUEST_TIMEOUT", "7")),
     )
 
