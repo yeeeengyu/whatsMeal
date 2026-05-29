@@ -2,19 +2,21 @@
 
 from pathlib import Path
 
+from PyInstaller.utils.hooks import collect_submodules
+
 
 block_cipher = None
 repo_root = Path(SPECPATH).resolve().parents[2]
 tray_root = repo_root / "school-meal-tray"
+gi_hiddenimports = collect_submodules("gi")
 
 a = Analysis(
     [str(tray_root / "meal_tray.py")],
     pathex=[str(tray_root)],
     binaries=[],
     datas=[],
-    hiddenimports=[
+    hiddenimports=gi_hiddenimports + [
         "dotenv",
-        "gi",
         "gi.repository.AyatanaAppIndicator3",
         "gi.repository.AppIndicator3",
         "gi.repository.Gdk",
@@ -26,6 +28,8 @@ a = Analysis(
     hooksconfig={
         "gi": {
             "module-versions": {
+                "AyatanaAppIndicator3": "0.1",
+                "AppIndicator3": "0.1",
                 "Gtk": "3.0",
                 "Gdk": "3.0",
             },

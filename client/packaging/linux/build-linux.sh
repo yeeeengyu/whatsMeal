@@ -27,6 +27,17 @@ fi
 
 source school-meal-tray/.venv/bin/activate
 
+if ! python - <<'PY'
+import gi  # noqa: F401
+PY
+then
+  echo "Recreating venv with access to system GTK bindings..."
+  deactivate || true
+  rm -rf school-meal-tray/.venv
+  python3 -m venv --system-site-packages school-meal-tray/.venv
+  source school-meal-tray/.venv/bin/activate
+fi
+
 echo "[1/5] Updating pip..."
 python -m pip install --upgrade pip
 
@@ -76,14 +87,7 @@ pyinstaller \
   --workpath school-meal-tray/build \
   client/packaging/linux/SchoolMealTray.spec
 
-if [[ -f school-meal-tray/.env ]]; then
-  cp school-meal-tray/.env school-meal-tray/dist/.env
-fi
-
 echo
 echo "Build complete: school-meal-tray/dist/SchoolMealTray"
-if [[ -f school-meal-tray/dist/.env ]]; then
-  echo "Copied runtime env: school-meal-tray/dist/.env"
-else
-  echo "Add NEIS_API_KEY to school-meal-tray/dist/.env before running."
-fi
+echo "Uses the bundled API base by default."
+echo "Optional override: create school-meal-tray/dist/.env with API_BASE_URL=..."

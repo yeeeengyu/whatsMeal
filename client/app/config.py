@@ -5,6 +5,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+DEFAULT_SCHOOL_NAME = "경북소프트웨어마이스터고등학교"
+
 
 @dataclass(frozen=True)
 class AppConfig:

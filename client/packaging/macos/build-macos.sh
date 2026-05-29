@@ -26,12 +26,6 @@ rm -rf build dist
 echo "[4/4] Building macOS app..."
 pyinstaller --noconfirm --clean packaging/macos/WhatsMealMac.spec
 
-if [[ -f .env ]]; then
-  cp .env dist/WhatsMeal.app/Contents/MacOS/.env
-elif [[ -f .env.example ]]; then
-  cp .env.example dist/WhatsMeal.app/Contents/MacOS/.env
-fi
-
 (
   cd dist
   rm -f WhatsMeal-macOS.zip
@@ -42,3 +36,5 @@ echo
 echo "Build complete:"
 echo "  dist/WhatsMeal.app"
 echo "  dist/WhatsMeal-macOS.zip"
+echo "Uses the bundled API base by default."
+echo "Optional override: add .env to WhatsMeal.app/Contents/MacOS with API_BASE_URL=..."

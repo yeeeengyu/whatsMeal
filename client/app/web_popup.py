@@ -11,11 +11,12 @@ import pyperclip
 import webview
 
 from app.api import MealApiClient, MealData
+from app.config import DEFAULT_SCHOOL_NAME
 from app.tray import MealTray
 
 
-WINDOW_WIDTH = 380
-WINDOW_HEIGHT = 540
+WINDOW_WIDTH = 420
+WINDOW_HEIGHT = 640
 
 
 class WebMealApp:
@@ -28,7 +29,7 @@ class WebMealApp:
 
     def run(self) -> int:
         self._window = webview.create_window(
-            "경소고 급식",
+            "학교 급식",
             html=_html(),
             js_api=self,
             width=WINDOW_WIDTH,
@@ -46,13 +47,16 @@ class WebMealApp:
         return 0
 
     def get_initial_state(self) -> dict[str, Any]:
-        return {"theme": self._load_theme()}
+        return {
+            "theme": self._load_theme(),
+            "schoolName": self._load_school_name(),
+        }
 
-    def get_today(self) -> dict[str, Any]:
-        return self._meal_response(self._api_client.get_today)
+    def get_today(self, school_name: str | None = None) -> dict[str, Any]:
+        return self._meal_response(lambda: self._api_client.get_today(school_name))
 
-    def get_by_date(self, date_value: str) -> dict[str, Any]:
-        return self._meal_response(lambda: self._api_client.get_by_date(date_value))
+    def get_by_date(self, date_value: str, school_name: str | None = None) -> dict[str, Any]:
+        return self._meal_response(lambda: self._api_client.get_by_date(date_value, school_name))
 
     def copy_meal(self, meal: dict[str, Any]) -> dict[str, Any]:
         try:
@@ -69,6 +73,11 @@ class WebMealApp:
 
         self._save_settings({"theme": theme})
         return {"ok": True}
+
+    def set_school_name(self, school_name: str) -> dict[str, Any]:
+        normalized_name = _normalize_school_name(school_name)
+        self._save_settings({"schoolName": normalized_name})
+        return {"ok": True, "schoolName": normalized_name}
 
     def hide_popup(self) -> None:
         self._visible = False
@@ -117,6 +126,10 @@ class WebMealApp:
         theme = settings.get("theme", "light")
         return theme if theme in {"light", "dark"} else "light"
 
+    def _load_school_name(self) -> str:
+        settings = self._load_settings()
+        return _normalize_school_name(settings.get("schoolName"))
+
     def _load_settings(self) -> dict[str, Any]:
         try:
             return json.loads(self._settings_path.read_text(encoding="utf-8"))
@@ -145,10 +158,11 @@ def _settings_path() -> Path:
 
 def _meal_clipboard_text(meal: dict[str, Any]) -> str:
     date = str(meal.get("date", ""))
+    school_name = str(meal.get("school_name") or DEFAULT_SCHOOL_NAME)
     lunch = _string_list(meal.get("lunch"))
     dinner = _string_list(meal.get("dinner"))
 
-    lines = [f"{date} 경소고 급식", "", "[점심]"]
+    lines = [f"{date} {school_name} 급식", "", "[점심]"]
     lines.extend(f"- {dish}" for dish in lunch)
     lines.extend(["", "[저녁]"])
     lines.extend(f"- {dish}" for dish in dinner)
@@ -159,6 +173,14 @@ def _string_list(value: Any) -> list[str]:
     if not isinstance(value, list):
         return []
     return [str(item) for item in value if str(item).strip()]
+
+
+def _normalize_school_name(value: Any) -> str:
+    if not isinstance(value, str):
+        return DEFAULT_SCHOOL_NAME
+
+    normalized = value.strip()
+    return normalized or DEFAULT_SCHOOL_NAME
 
 
 def _html() -> str:
@@ -178,6 +200,7 @@ def _html() -> str:
       --control: #ffffff;
       --control-hover: #eef2f6;
       --control-border: #d5dbe3;
+      --control-panel: #eef2f7;
       --card: #ffffff;
       --card-border: #e1e6ee;
       --dish: #253044;
@@ -201,6 +224,7 @@ def _html() -> str:
       --control: #1f2937;
       --control-hover: #273449;
       --control-border: #374151;
+      --control-panel: #151e2c;
       --card: #182131;
       --card-border: #303b4f;
       --dish: #e5e7eb;
@@ -247,15 +271,13 @@ def _html() -> str:
       display: flex;
       flex-direction: column;
       gap: 10px;
-      padding: 14px 16px;
+      padding: 14px;
       background: var(--window);
       border: 1px solid var(--window-border);
       border-radius: 8px;
     }
 
     .header,
-    .theme-row,
-    .date-search,
     .actions {
       display: flex;
       align-items: center;
@@ -274,6 +296,9 @@ def _html() -> str:
       font-size: 17px;
       font-weight: 700;
       color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .date-label,
@@ -286,8 +311,32 @@ def _html() -> str:
       font-weight: 600;
     }
 
-    .spacer {
-      flex: 1;
+    .control-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 10px;
+      background: var(--control-panel);
+      border: 1px solid var(--control-border);
+      border-radius: 8px;
+    }
+
+    .field-row,
+    .theme-row {
+      display: grid;
+      grid-template-columns: 48px minmax(0, 1fr) 64px;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .theme-row {
+      grid-template-columns: 48px minmax(0, 1fr);
+    }
+
+    .field-label {
+      color: var(--muted);
+      font-weight: 700;
     }
 
     .ghost,
@@ -312,6 +361,13 @@ def _html() -> str:
     .ghost:hover,
     .theme-button:hover {
       background: var(--control-hover);
+    }
+
+    .ghost:disabled,
+    .secondary:disabled,
+    .theme-button:disabled {
+      opacity: 0.6;
+      cursor: default;
     }
 
     .segment {
@@ -339,6 +395,10 @@ def _html() -> str:
       min-height: 18px;
       line-height: 18px;
       word-break: keep-all;
+    }
+
+    .status.error {
+      color: #dc2626;
     }
 
     .meal-scroll {
@@ -394,7 +454,8 @@ def _html() -> str:
       cursor: default;
     }
 
-    .date-input {
+    .date-input,
+    .school-input {
       flex: 1;
       min-width: 0;
       height: 34px;
@@ -406,7 +467,7 @@ def _html() -> str:
     }
 
     .secondary {
-      width: 92px;
+      width: 100%;
       height: 34px;
       background: var(--secondary);
       color: #ffffff;
@@ -415,25 +476,39 @@ def _html() -> str:
     .secondary:hover {
       background: var(--secondary-hover);
     }
+
   </style>
 </head>
 <body>
   <main class="shell" data-theme="light">
     <section class="header">
       <div class="header-text">
-        <h1 class="title">경소고 급식</h1>
+        <h1 class="title" id="titleLabel">경북소프트웨어마이스터고등학교 급식</h1>
         <div class="date-label" id="dateLabel">오늘</div>
       </div>
       <button class="ghost" id="refreshButton" type="button">새로고침</button>
       <button class="ghost" id="closeButton" type="button">닫기</button>
     </section>
 
-    <section class="theme-row">
-      <span class="theme-label">테마</span>
-      <span class="spacer"></span>
-      <div class="segment">
-        <button class="theme-button" id="lightThemeButton" type="button">화이트</button>
-        <button class="theme-button" id="darkThemeButton" type="button">다크</button>
+    <section class="control-panel">
+      <div class="field-row">
+        <label class="field-label" for="schoolInput">학교</label>
+        <input class="school-input" id="schoolInput" type="text" autocomplete="off" spellcheck="false">
+        <button class="secondary" id="schoolButton" type="button">적용</button>
+      </div>
+
+      <div class="field-row">
+        <label class="field-label" for="dateInput">날짜</label>
+        <input class="date-input" id="dateInput" type="date">
+        <button class="secondary" id="searchButton" type="button">조회</button>
+      </div>
+
+      <div class="theme-row">
+        <span class="theme-label">테마</span>
+        <div class="segment">
+          <button class="theme-button" id="lightThemeButton" type="button">화이트</button>
+          <button class="theme-button" id="darkThemeButton" type="button">다크</button>
+        </div>
       </div>
     </section>
 
@@ -446,23 +521,26 @@ def _html() -> str:
     <section class="actions">
       <button class="primary" id="copyButton" type="button" disabled>복사</button>
     </section>
-
-    <section class="date-search">
-      <input class="date-input" id="dateInput" type="date">
-      <button class="secondary" id="searchButton" type="button">날짜 조회</button>
-    </section>
   </main>
 
   <script>
+    const DEFAULT_SCHOOL_NAME = "경북소프트웨어마이스터고등학교";
     const shell = document.querySelector(".shell");
+    const titleLabel = document.getElementById("titleLabel");
     const statusLabel = document.getElementById("statusLabel");
     const dateLabel = document.getElementById("dateLabel");
     const mealList = document.getElementById("mealList");
     const copyButton = document.getElementById("copyButton");
     const dateInput = document.getElementById("dateInput");
+    const schoolInput = document.getElementById("schoolInput");
+    const refreshButton = document.getElementById("refreshButton");
+    const schoolButton = document.getElementById("schoolButton");
+    const searchButton = document.getElementById("searchButton");
     const lightThemeButton = document.getElementById("lightThemeButton");
     const darkThemeButton = document.getElementById("darkThemeButton");
     let currentMeal = null;
+    let currentSchoolName = DEFAULT_SCHOOL_NAME;
+    let isLoading = false;
 
     function todayString() {
       const now = new Date();
@@ -471,14 +549,38 @@ def _html() -> str:
       return `${now.getFullYear()}-${month}-${date}`;
     }
 
-    function setStatus(message) {
+    function setStatus(message, isError) {
       statusLabel.textContent = message || "";
+      statusLabel.classList.toggle("error", Boolean(isError));
+    }
+
+    function setBusy(value) {
+      isLoading = Boolean(value);
+      refreshButton.disabled = isLoading;
+      schoolButton.disabled = isLoading;
+      searchButton.disabled = isLoading;
+      copyButton.disabled = isLoading || !currentMeal;
+    }
+
+    function normalizeSchoolName(value) {
+      const normalized = String(value || "").trim();
+      return normalized || DEFAULT_SCHOOL_NAME;
+    }
+
+    function setSchoolName(value, save) {
+      currentSchoolName = normalizeSchoolName(value);
+      schoolInput.value = currentSchoolName;
+      titleLabel.textContent = `${currentSchoolName} 급식`;
+
+      if (save) {
+        window.pywebview?.api?.set_school_name(currentSchoolName);
+      }
     }
 
     function setLoading(message) {
       setStatus(message);
       currentMeal = null;
-      copyButton.disabled = true;
+      setBusy(true);
       mealList.replaceChildren();
     }
 
@@ -517,8 +619,9 @@ def _html() -> str:
     function renderMeal(meal) {
       currentMeal = meal;
       dateLabel.textContent = meal.date || "오늘";
+      setSchoolName(meal.school_name || currentSchoolName, true);
       setStatus("");
-      copyButton.disabled = false;
+      setBusy(false);
       mealList.replaceChildren(
         sectionNode("점심", meal.lunch),
         sectionNode("저녁", meal.dinner),
@@ -527,24 +630,28 @@ def _html() -> str:
 
     function renderError(message) {
       currentMeal = null;
-      copyButton.disabled = true;
+      setBusy(false);
       mealList.replaceChildren();
-      setStatus(message || "급식을 불러오지 못했습니다.");
+      setStatus(message || "급식을 불러오지 못했습니다.", true);
     }
 
     async function requestMeal(loader, loadingMessage) {
       setLoading(loadingMessage);
-      const response = await loader();
-      if (response.ok) {
-        renderMeal(response.meal);
-      } else {
-        renderError(response.error);
+      try {
+        const response = await loader();
+        if (response.ok) {
+          renderMeal(response.meal);
+        } else {
+          renderError(response.error);
+        }
+      } catch (error) {
+        renderError("급식을 불러오지 못했습니다.");
       }
     }
 
     async function loadToday() {
       await requestMeal(
-        () => window.pywebview.api.get_today(),
+        () => window.pywebview.api.get_today(currentSchoolName),
         "오늘 급식을 불러오는 중..."
       );
     }
@@ -552,9 +659,14 @@ def _html() -> str:
     async function loadDate() {
       const dateValue = dateInput.value || todayString();
       await requestMeal(
-        () => window.pywebview.api.get_by_date(dateValue),
+        () => window.pywebview.api.get_by_date(dateValue, currentSchoolName),
         "급식을 불러오는 중..."
       );
+    }
+
+    async function applySchoolName() {
+      setSchoolName(schoolInput.value, false);
+      await loadToday();
     }
 
     async function copyMeal() {
@@ -567,7 +679,7 @@ def _html() -> str:
         setStatus("복사됨");
         window.setTimeout(() => setStatus(""), 1600);
       } else {
-        setStatus(response.error);
+        setStatus(response.error, true);
       }
     }
 
@@ -575,14 +687,21 @@ def _html() -> str:
       dateInput.value = todayString();
       const initialState = await window.pywebview.api.get_initial_state();
       setTheme(initialState.theme);
+      setSchoolName(initialState.schoolName, false);
       await loadToday();
     }
 
-    document.getElementById("refreshButton").addEventListener("click", loadToday);
+    refreshButton.addEventListener("click", loadToday);
     document.getElementById("closeButton").addEventListener("click", () => {
       window.pywebview.api.hide_popup();
     });
-    document.getElementById("searchButton").addEventListener("click", loadDate);
+    searchButton.addEventListener("click", loadDate);
+    schoolButton.addEventListener("click", applySchoolName);
+    schoolInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        applySchoolName();
+      }
+    });
     copyButton.addEventListener("click", copyMeal);
     lightThemeButton.addEventListener("click", () => setTheme("light"));
     darkThemeButton.addEventListener("click", () => setTheme("dark"));
