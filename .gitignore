@@ -22,7 +22,7 @@ ENV/
 
 # Build artifacts
 build/
-dist/
+# dist/
 *.spec.bak
 *.manifest
 
@@ -62,4 +62,4 @@ client/build/
 client/dist/
 
 # Local test folder
-school-meal-tray/
+# school-meal-tray/
