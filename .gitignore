@@ -22,7 +22,7 @@ ENV/
 
 # Build artifacts
 build/
-# dist/
+dist/
 *.spec.bak
 *.manifest
 
