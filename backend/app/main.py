@@ -28,9 +28,9 @@ async def health() -> dict[str, str]:
 
 
 @app.get("/api/meals/today")
-async def meals_today() -> dict:
+async def meals_today(school_name: str | None = None) -> dict:
     try:
-        return await get_meals_for_date(today_kst(), app_settings)
+        return await get_meals_for_date(today_kst(), app_settings, school_name)
     except SchoolNotFoundError as exc:
         raise HTTPException(status_code=404, detail="School not found") from exc
     except MealNotFoundError as exc:
@@ -40,18 +40,17 @@ async def meals_today() -> dict:
 
 
 @app.get("/api/meals/date/{date}")
-async def meals_by_date(date: str) -> dict:
+async def meals_by_date(date: str, school_name: str | None = None) -> dict:
     try:
         meal_date = parse_meal_date(date)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail="Invalid date format") from exc
 
     try:
-        return await get_meals_for_date(meal_date, app_settings)
+        return await get_meals_for_date(meal_date, app_settings, school_name)
     except SchoolNotFoundError as exc:
         raise HTTPException(status_code=404, detail="School not found") from exc
     except MealNotFoundError as exc:
         raise HTTPException(status_code=404, detail="Meal not found") from exc
     except NeisFetchError as exc:
         raise HTTPException(status_code=502, detail="Failed to fetch data from NEIS") from exc
-

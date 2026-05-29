@@ -38,7 +38,7 @@ DEFAULT_SCHOOL_CODE=8750829
 CORS_ORIGINS=*
 ```
 
-이 백엔드는 경북소프트웨어마이스터고등학교 전용 MVP입니다. `DEFAULT_REGION_CODE`와 `DEFAULT_SCHOOL_CODE` 값으로 바로 급식을 조회하며, 학교 검색 API는 제공하지 않습니다.
+요청에 `school_name`이 없으면 `SCHOOL_NAME`, `DEFAULT_REGION_CODE`, `DEFAULT_SCHOOL_CODE` 값으로 기본 학교 급식을 바로 조회합니다. 다른 학교명은 NEIS 학교 정보 API로 학교 코드를 찾은 뒤 급식을 조회합니다.
 
 `CORS_ORIGINS`는 `*` 또는 쉼표로 구분한 origin 목록을 사용할 수 있습니다.
 
@@ -58,6 +58,10 @@ CORS_ORIGINS=*
 
 한국 시간 기준 오늘 급식을 조회합니다.
 
+쿼리:
+
+- `school_name`: 선택 값. 없으면 기본 학교를 사용합니다.
+
 ### GET /api/meals/date/{date}
 
 특정 날짜 급식을 조회합니다.
@@ -66,6 +70,10 @@ CORS_ORIGINS=*
 
 - `20260513`
 - `2026-05-13`
+
+쿼리:
+
+- `school_name`: 선택 값. 없으면 기본 학교를 사용합니다.
 
 응답 예시:
 
@@ -88,11 +96,12 @@ CORS_ORIGINS=*
 curl http://localhost:8000/health
 curl http://localhost:8000/api/meals/today
 curl http://localhost:8000/api/meals/date/20260513
+curl "http://localhost:8000/api/meals/today?school_name=경북소프트웨어마이스터고등학교"
 ```
 
 ## 에러 응답
 
-- 학교 코드 설정 없음: `404 {"detail":"School not found"}`
+- 학교 코드 설정 없음 또는 학교명 검색 실패: `404 {"detail":"School not found"}`
 - 급식 없음: `404 {"detail":"Meal not found"}`
 - 날짜 형식 오류: `400 {"detail":"Invalid date format"}`
 - NEIS API 오류: `502 {"detail":"Failed to fetch data from NEIS"}`
@@ -102,5 +111,6 @@ curl http://localhost:8000/api/meals/date/20260513
 DB 없이 dict 기반 in-memory cache를 사용합니다.
 
 - 급식 결과: 다음날 00:10까지
+- 학교 검색 결과: 24시간
 
 캐시는 프로세스 메모리에 저장되므로 서버를 재시작하면 비워집니다.

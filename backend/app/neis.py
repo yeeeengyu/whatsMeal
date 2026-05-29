@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from typing import Any
 
 import httpx
@@ -8,6 +8,7 @@ from app.config import Settings
 from app.utils import clean_dish_text, now_kst, to_neis_date
 
 BASE_URL = "https://open.neis.go.kr/hub"
+SCHOOL_CACHE_EXPIRES_IN_SECONDS = 60 * 60 * 24
 
 
 class NeisFetchError(Exception):
@@ -72,8 +73,62 @@ async def get_default_school(settings: Settings) -> dict[str, str]:
     }
 
 
-async def get_meals_for_date(meal_date: date, settings: Settings) -> dict[str, Any]:
-    school = await get_default_school(settings)
+async def find_school_by_name(school_name: str, settings: Settings) -> dict[str, str]:
+    normalized_name = school_name.strip()
+    if not normalized_name:
+        raise SchoolNotFoundError
+
+    cache_key = f"school:{normalized_name}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    data = await _neis_get(
+        "schoolInfo",
+        {
+            "SCHUL_NM": normalized_name,
+        },
+        settings,
+    )
+    rows = _extract_rows(data, "schoolInfo")
+    if not rows:
+        raise SchoolNotFoundError
+
+    exact_match = next(
+        (row for row in rows if row.get("SCHUL_NM") == normalized_name),
+        rows[0],
+    )
+    school = {
+        "name": str(exact_match.get("SCHUL_NM", normalized_name)),
+        "region_code": str(exact_match.get("ATPT_OFCDC_SC_CODE", "")),
+        "school_code": str(exact_match.get("SD_SCHUL_CODE", "")),
+    }
+    if not school["region_code"] or not school["school_code"]:
+        raise SchoolNotFoundError
+
+    cache.set(
+        cache_key,
+        school,
+        now_kst().replace(microsecond=0)
+        + timedelta(seconds=SCHOOL_CACHE_EXPIRES_IN_SECONDS),
+    )
+    return school
+
+
+async def get_school(settings: Settings, school_name: str | None = None) -> dict[str, str]:
+    requested_name = (school_name or "").strip()
+    if not requested_name or requested_name == settings.school_name:
+        return await get_default_school(settings)
+
+    return await find_school_by_name(requested_name, settings)
+
+
+async def get_meals_for_date(
+    meal_date: date,
+    settings: Settings,
+    school_name: str | None = None,
+) -> dict[str, Any]:
+    school = await get_school(settings, school_name)
     neis_date = to_neis_date(meal_date)
     cache_key = f"meal:{school['region_code']}:{school['school_code']}:{neis_date}"
 
