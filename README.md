@@ -50,5 +50,7 @@ GitHub Releases에서 최신 `WhatsMeal.exe` 파일을 다운로드하세요.
 
 - Windows 10 이상
 - Windows 11
+- Linux ( Ubuntu, Mint )
+- macOS
 
-Linux와 macOS용 앱은 아직 제공하지 않습니다.
+Arch Linux는 지원하지 않습니다.
